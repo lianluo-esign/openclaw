@@ -7,6 +7,7 @@ import {
   resolveSecretInputRef,
 } from "../config/types.secrets.js";
 import { assertExplicitGatewayAuthModeWhenBothConfigured } from "../gateway/auth-mode-policy.js";
+import { safeNetworkInterfaces } from "../infra/safe-network-interfaces.js";
 import { secretRefKey } from "../secrets/ref-contract.js";
 import { resolveSecretRefValues } from "../secrets/resolve.js";
 import { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
@@ -120,7 +121,13 @@ function pickIPv4Matching(
   networkInterfaces: () => ReturnType<typeof os.networkInterfaces>,
   matches: (address: string) => boolean,
 ): string | null {
-  const nets = networkInterfaces();
+  const nets = (() => {
+    try {
+      return networkInterfaces();
+    } catch {
+      return safeNetworkInterfaces();
+    }
+  })();
   for (const entries of Object.values(nets)) {
     if (!entries) {
       continue;
